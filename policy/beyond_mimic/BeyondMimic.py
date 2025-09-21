@@ -25,17 +25,17 @@ class BeyondMimic(FSMState):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(current_dir, "config", "BeyondMimic.yaml")
         with open(config_path, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            self.onnx_path = os.path.join(current_dir, "model", config["onnx_path"])
-            self.kps_lab = np.array(config["kp_lab"], dtype=np.float32)
-            self.kds_lab = np.array(config["kd_lab"], dtype=np.float32)
-            self.default_angles_lab =  np.array(config["default_angles_lab"], dtype=np.float32)
-            self.mj2lab =  np.array(config["mj2lab"], dtype=np.int32)
-            self.tau_limit =  np.array(config["tau_limit"], dtype=np.float32)
-            self.num_actions = config["num_actions"]
-            self.num_obs = config["num_obs"]
-            self.action_scale_lab = np.array(config["action_scale_lab"], dtype=np.float32)
-            self.motion_length = config["motion_length"]
+            self.config = yaml.load(f, Loader=yaml.FullLoader)
+            self.onnx_path = os.path.join(current_dir, "model", self.config["onnx_path"])
+            self.kps_lab = np.array(self.config["kp_lab"], dtype=np.float32)
+            self.kds_lab = np.array(self.config["kd_lab"], dtype=np.float32)
+            self.default_angles_lab =  np.array(self.config["default_angles_lab"], dtype=np.float32)
+            self.mj2lab =  np.array(self.config["mj2lab"], dtype=np.int32)
+            self.tau_limit =  np.array(self.config["tau_limit"], dtype=np.float32)
+            self.num_actions = self.config["num_actions"]
+            self.num_obs = self.config["num_obs"]
+            self.action_scale_lab = np.array(self.config["action_scale_lab"], dtype=np.float32)
+            self.motion_length = self.config["motion_length"]  # 没用上，可用于截断
             
             self.qj_obs = np.zeros(self.num_actions, dtype=np.float32)
             self.dqj_obs = np.zeros(self.num_actions, dtype=np.float32)
@@ -219,10 +219,10 @@ class BeyondMimic(FSMState):
         self.counter_step += 1
 
     def exit(self):
-        self.action = np.zeros(23, dtype=np.float32)
-        self.action_buf = np.zeros(23 * self.history_length, dtype=np.float32)
+        self.action = np.zeros(self.config["num_actions"], dtype=np.float32)
+        # self.action_buf = np.zeros(self.config["num_actions"] * self.history_length, dtype=np.float32)
         self.ref_motion_phase = 0.
-        self.ref_motion_phase_buf = np.zeros(1 * self.history_length, dtype=np.float32)
+        # self.ref_motion_phase_buf = np.zeros(1 * self.history_length, dtype=np.float32)
         self.motion_time = 0
         self.counter_step = 0
         
