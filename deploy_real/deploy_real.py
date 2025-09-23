@@ -112,8 +112,8 @@ class Controller:
                 self.state_cmd.skill_cmd = FSMCommand.SKILL_2
             # if self.remote_controller.is_button_pressed(KeyMap.B) and self.remote_controller.is_button_pressed(KeyMap.R1):
             #     self.state_cmd.skill_cmd = FSMCommand.SKILL_3
-            # if self.remote_controller.is_button_pressed(KeyMap.Y) and self.remote_controller.is_button_pressed(KeyMap.L1):
-            #     self.state_cmd.skill_cmd = FSMCommand.SKILL_4
+            if self.remote_controller.is_button_pressed(KeyMap.Y) and self.remote_controller.is_button_pressed(KeyMap.L1):
+                self.state_cmd.skill_cmd = FSMCommand.SKILL_4  # Beyond Mimic
             
             self.state_cmd.vel_cmd[0] =  self.remote_controller.ly
             self.state_cmd.vel_cmd[1] =  self.remote_controller.lx * -1
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         try:
             controller.run()
             # Press the select key to exit
-            if controller.remote_controller.is_button_pressed(KeyMap.select):
+            if controller.remote_controller.is_button_pressed(KeyMap.select):  # press SELECT to quit
                 break
         except KeyboardInterrupt:
             break
