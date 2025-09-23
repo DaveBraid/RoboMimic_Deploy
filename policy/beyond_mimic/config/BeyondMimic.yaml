@@ -1,6 +1,6 @@
 # onnx_path: "policy_fightAndSports1_s1.onnx"
 onnx_path: "charz_wo_estimation.onnx"
-motion_length: 140 
+motion_length: 140  # TODO
 
 tau_limit: [88.0,  88.0, 88.0,
                    88.0,  88.0, 88.0,
