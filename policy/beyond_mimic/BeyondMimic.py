@@ -55,13 +55,15 @@ class BeyondMimic(FSMState):
             self.input_name = []
             for i, inpt in enumerate(input):
                 self.input_name.append(inpt.name)
+            
+            self.counter_step_init = self.config['counter_step_init']  # 用于跳过动作前段静止部分
 
             print("BeyondMimic-like policy initializing ...")
     
     def enter(self):
         self.ref_motion_phase = 0.
         self.motion_time = 0
-        self.counter_step = 0
+        self.counter_step = self.counter_step_init
 
         observation = {}
         observation[self.input_name[0]] = np.zeros((1, self.num_obs), dtype=np.float32)
@@ -174,7 +176,7 @@ class BeyondMimic(FSMState):
         ref_anchor_ori_w = self.ref_body_quat_w[:, 7].squeeze(0)
 
         # 在第一帧提取当前机器人yaw方向，与参考动作yaw方向做差（与beyond mimic一致）
-        if(self.counter_step < 2):
+        if(self.counter_step - self.counter_step_init < 2):
             init_to_anchor = self.matrix_from_quat(self.yaw_quat(ref_anchor_ori_w))
             world_to_anchor = self.matrix_from_quat(self.yaw_quat(robot_quat))
             self.init_to_world = world_to_anchor @ init_to_anchor.T
