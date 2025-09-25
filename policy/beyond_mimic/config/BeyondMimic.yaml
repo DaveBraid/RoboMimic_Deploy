@@ -1,5 +1,6 @@
 # onnx_path: "policy_fightAndSports1_s1.onnx"
-onnx_path: "charz_wo_estimation.onnx"
+# onnx_path: "policy_charz_wo_est_14000.onnx"
+onnx_path: "policy_zuiwu_48000.onnx"
 motion_length: 140  # TODO
 counter_step_init: 280  # 用于跳过动作前段静止部分
 
