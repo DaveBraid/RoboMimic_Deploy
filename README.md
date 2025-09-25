@@ -87,6 +87,16 @@ cd unitree_cpp
 pip install .
 pip install -r example/requirements.txt
 ```
+
+如果修改了 unitree_cpp 代码，需要重新编译，进行下列操作即可
+```bash
+# 激活对应python环境
+pip uninstall unitree_cpp -y
+cd unitree_cpp
+pip install .
+```
+程序会自动编译并生效
+
 ---
 ## 运行代码
 
