@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.absolute()))
 
-from common.path_config import PROJECT_ROOT
-from common.ctrlcomp import *
+# from common.path_config import PROJECT_ROOT
+# from common.ctrlcomp import *
 from FSM.FSM import *
 from typing import Union
 import numpy as np
@@ -15,7 +15,7 @@ import yaml
 from config_cpp_sdk2 import RobotConfig
 from unitree_cpp import UnitreeController, RobotState, SportState
 
-from common.command_helper import create_damping_cmd, create_zero_cmd, init_cmd_hg, init_cmd_go, MotorMode
+# from common.command_helper import create_damping_cmd, create_zero_cmd, init_cmd_hg, init_cmd_go, MotorMode
 from common.rotation_helper import get_gravity_orientation_real, transform_imu_data
 from common.remote_controller import RemoteController, KeyMap
 from config import Config
