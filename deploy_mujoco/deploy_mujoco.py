@@ -15,13 +15,25 @@ from FSM.FSM import *
 from common.utils import get_gravity_orientation
 from common.joystick import JoyStick, JoystickButton
 
-
+def change_command_auto(start_time):
+    cur_time = time.time()
+    duration = cur_time - start_time
+    if duration < 1:
+        return FSMCommand.PASSIVE
+    elif duration < 2:
+        return FSMCommand.POS_RESET
+    elif duration < 3:
+        return FSMCommand.LOCO
+    else:
+        return FSMCommand.SKILL_4  # Beyond Mimic
 
 def pd_control(target_q, q, kp, target_dq, dq, kd):
     """Calculates torques from position commands"""
     return (target_q - q) * kp + (target_dq - dq) * kd
 
 if __name__ == "__main__":
+    remote_dev = True
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     mujoco_yaml_path = os.path.join(current_dir, "config", "mujoco.yaml")
     with open(mujoco_yaml_path, "r") as f:
@@ -44,34 +56,45 @@ if __name__ == "__main__":
     policy_output = PolicyOutput(num_joints)
     FSM_controller = FSM(state_cmd, policy_output)
     
-    joystick = JoyStick()
+    joystick = JoyStick() if not remote_dev else None
     Running = True
     with mujoco.viewer.launch_passive(m, d) as viewer:
         sim_start_time = time.time()
         while viewer.is_running() and Running:
             try:
-                if(joystick.is_button_pressed(JoystickButton.SELECT)):
-                    Running = False
+                if not remote_dev:
+                    if(joystick.is_button_pressed(JoystickButton.SELECT)):
+                        Running = False
 
-                joystick.update()
-                if joystick.is_button_released(JoystickButton.L3):
-                    state_cmd.skill_cmd = FSMCommand.PASSIVE
-                if joystick.is_button_released(JoystickButton.START):
-                    state_cmd.skill_cmd = FSMCommand.POS_RESET
-                if joystick.is_button_released(JoystickButton.A) and joystick.is_button_pressed(JoystickButton.R1):
-                    state_cmd.skill_cmd = FSMCommand.LOCO
-                if joystick.is_button_released(JoystickButton.X) and joystick.is_button_pressed(JoystickButton.R1):
-                    state_cmd.skill_cmd = FSMCommand.SKILL_1
-                if joystick.is_button_released(JoystickButton.Y) and joystick.is_button_pressed(JoystickButton.R1):
-                    state_cmd.skill_cmd = FSMCommand.SKILL_2
-                if joystick.is_button_released(JoystickButton.B) and joystick.is_button_pressed(JoystickButton.R1):
-                    state_cmd.skill_cmd = FSMCommand.SKILL_3
-                if joystick.is_button_released(JoystickButton.Y) and joystick.is_button_pressed(JoystickButton.L1):
-                    state_cmd.skill_cmd = FSMCommand.SKILL_4  # Beyond Mimic
-                
-                state_cmd.vel_cmd[0] = -joystick.get_axis_value(1)
-                state_cmd.vel_cmd[1] = -joystick.get_axis_value(0)
-                state_cmd.vel_cmd[2] = -joystick.get_axis_value(3)
+                    joystick.update()
+                    if joystick.is_button_released(JoystickButton.L3):
+                        state_cmd.skill_cmd = FSMCommand.PASSIVE
+                    if joystick.is_button_released(JoystickButton.START):
+                        state_cmd.skill_cmd = FSMCommand.POS_RESET
+                    if joystick.is_button_released(JoystickButton.A) and joystick.is_button_pressed(JoystickButton.R1):
+                        state_cmd.skill_cmd = FSMCommand.LOCO
+                    if joystick.is_button_released(JoystickButton.X) and joystick.is_button_pressed(JoystickButton.R1):
+                        state_cmd.skill_cmd = FSMCommand.SKILL_1
+                    if joystick.is_button_released(JoystickButton.Y) and joystick.is_button_pressed(JoystickButton.R1):
+                        state_cmd.skill_cmd = FSMCommand.SKILL_2
+                    if joystick.is_button_released(JoystickButton.B) and joystick.is_button_pressed(JoystickButton.R1):
+                        state_cmd.skill_cmd = FSMCommand.SKILL_3
+                    if joystick.is_button_released(JoystickButton.Y) and joystick.is_button_pressed(JoystickButton.L1):
+                        state_cmd.skill_cmd = FSMCommand.SKILL_4  # Beyond Mimic
+                    if joystick.is_button_released(JoystickButton.A):
+                        try:
+                            print('counter_step=', FSM_controller.cur_policy.counter_step)  # 打印动作帧
+                        except AttributeError:
+                            print('No counter_step attribute!')
+                    
+                    state_cmd.vel_cmd[0] = -joystick.get_axis_value(1)
+                    state_cmd.vel_cmd[1] = -joystick.get_axis_value(0)
+                    state_cmd.vel_cmd[2] = -joystick.get_axis_value(3)
+                else:
+                    state_cmd.skill_cmd = change_command_auto(sim_start_time)
+                    state_cmd.vel_cmd[0] = 0
+                    state_cmd.vel_cmd[1] = 0
+                    state_cmd.vel_cmd[2] = 0
                 
                 step_start = time.time()
                 
