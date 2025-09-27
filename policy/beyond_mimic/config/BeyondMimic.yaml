@@ -1,7 +1,7 @@
 # onnx_path: "policy_fightAndSports1_s1.onnx"
 onnx_path: "policy_charz_wo_est_14000.onnx"
 # onnx_path: "policy_zuiwu_48000.onnx"
-motion_length: 140  # TODO
+motion_length: 1200  # 动作长度，单位为step
 counter_step_init: 280  # 用于跳过动作前段静止部分
 
 tau_limit: [88.0,  88.0, 88.0,

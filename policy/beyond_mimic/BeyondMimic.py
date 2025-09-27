@@ -35,7 +35,7 @@ class BeyondMimic(FSMState):
             self.num_actions = self.config["num_actions"]
             self.num_obs = self.config["num_obs"]
             self.action_scale_lab = np.array(self.config["action_scale_lab"], dtype=np.float32)
-            self.motion_length = self.config["motion_length"]  # 没用上，可用于截断
+            self.motion_length = self.config["motion_length"]
             
             self.qj_obs = np.zeros(self.num_actions, dtype=np.float32)
             self.dqj_obs = np.zeros(self.num_actions, dtype=np.float32)
@@ -204,7 +204,20 @@ class BeyondMimic(FSMState):
 
         # obs0 是网络观测，obs1 是当前时间步，用于输出参考动作信息
         observation[self.input_name[0]] = mimic_obs_tensor
-        observation[self.input_name[1]] = np.array([[self.counter_step]], dtype=np.float32)
+        # 到达设定长度自动终止
+        if(self.counter_step > self.motion_length + self.counter_step_init):
+            # 增加三秒缓冲时间，作为结束动作
+            if self.counter_step < self.motion_length + self.counter_step_init + 90:
+                self.counter_step += 1
+                # 使时间步静止，停止在同一个动作帧，当作谢幕（但仍然能保持站立）
+                observation[self.input_name[1]] = np.array([[self.motion_length + self.counter_step_init]], dtype=np.float32)
+            else:
+                self.state_cmd.skill_cmd = FSMCommand.LOCO  # 动作结束后切换到LocoMode
+                print("Beyond mimic action hit motion length, switching to LocoMode")
+                return
+        else:
+            observation[self.input_name[1]] = np.array([[self.counter_step]], dtype=np.float32)
+        
         outputs_result = self.ort_session.run(None, observation)
 
         # 处理多个输出
