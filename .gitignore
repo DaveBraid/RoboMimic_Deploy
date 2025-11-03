@@ -83,3 +83,6 @@ Desktop.ini
 *.log
 *.sqlite
 *.db
+
+# 神农3
+**/shen_nong3/
