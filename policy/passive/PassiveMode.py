@@ -16,7 +16,7 @@ class PassiveMode(FSMState):
         self.name_str = "passive_mode"
         
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_dir, "config", "Passive.yaml")
+        config_path = os.path.join(current_dir, "config", "PassiveS3.yaml")
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
             self.kds = np.array(config["kds"], dtype=np.float32)

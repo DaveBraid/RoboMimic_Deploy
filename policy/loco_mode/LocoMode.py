@@ -8,6 +8,9 @@ import yaml
 import torch
 import os
 
+import onnx
+import onnxruntime
+
 class LocoMode(FSMState):
     def __init__(self, state_cmd:StateAndCmd, policy_output:PolicyOutput):
         super().__init__()
@@ -17,7 +20,7 @@ class LocoMode(FSMState):
         self.name_str = "Loco_mode"
         
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_dir, "config", "LocoMode.yaml")
+        config_path = os.path.join(current_dir, "config", "LocoModeS3.yaml")
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
             self.policy_path = os.path.join(current_dir, "model", config["policy_path"])
@@ -45,13 +48,19 @@ class LocoMode(FSMState):
             self.action = np.zeros(self.num_actions)
             
             # load policy
-            self.policy = torch.jit.load(self.policy_path)
+            # self.policy = torch.jit.load(self.policy_path)
+            # load policy
+            self.onnx_model = onnx.load(self.policy_path)
+            self.ort_session = onnxruntime.InferenceSession(self.policy_path)
             
             for _ in range(50):
                 with torch.inference_mode():
                     obs_tensor = self.obs.reshape(1, -1)
                     obs_tensor = obs_tensor.astype(np.float32)
-                    self.policy(torch.from_numpy(obs_tensor))
+                    # self.policy(torch.from_numpy(obs_tensor))
+                    input_obs = {'obs': obs_tensor}
+                    self.action = self.ort_session.run(None, input_obs)[0].squeeze()
+
                     
             print("Locomotion policy initializing ...")
                 
@@ -75,11 +84,11 @@ class LocoMode(FSMState):
         joycmd = self.state_cmd.vel_cmd.copy()
         self.cmd = scale_values(joycmd, [self.range_velx, self.range_vely, self.range_velz])
         
-        for i in range(len(self.joint2motor_idx)):
-            self.qj_obs[i] = self.qj[self.joint2motor_idx[i]]
-            self.dqj_obs[i] = self.dqj[self.joint2motor_idx[i]]
+        for i in range(self.num_actions):
+            self.qj_obs[i] = self.qj[self.joint2motor_idx[i+10]]
+            self.dqj_obs[i] = self.dqj[self.joint2motor_idx[i+10]]
             
-        self.qj_obs = (self.qj_obs - self.default_angles) * self.dof_pos_scale
+        self.qj_obs = (self.qj_obs - self.default_angles[10:]) * self.dof_pos_scale
         self.dqj_obs = self.dqj_obs * self.dof_vel_scale
         self.ang_vel = self.ang_vel * self.ang_vel_scale
         self.cmd = self.cmd * self.cmd_scale
@@ -93,8 +102,12 @@ class LocoMode(FSMState):
         
         obs_tensor = self.obs.reshape(1, -1)
         obs_tensor = obs_tensor.astype(np.float32)
-        self.action = self.policy(torch.from_numpy(obs_tensor).clip(-100, 100)).clip(-100, 100).detach().numpy().squeeze()
-        loco_action = self.action * self.action_scale + self.default_angles
+
+        # self.action = self.policy(torch.from_numpy(obs_tensor).clip(-100, 100)).clip(-100, 100).detach().numpy().squeeze()
+        input_obs = {'obs': obs_tensor}
+        self.action = self.ort_session.run(None, input_obs)[0].squeeze()
+        loco_action = self.action * self.action_scale + self.default_angles[10:]
+        loco_action = np.concatenate([np.zeros([10], dtype=np.float32), loco_action])  # 添加手部输出
         action_reorder = loco_action.copy()
         for i in range(len(self.joint2motor_idx)):
             motor_idx = self.joint2motor_idx[i]
