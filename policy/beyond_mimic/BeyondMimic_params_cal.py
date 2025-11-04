@@ -70,7 +70,7 @@ S3_CONFIG_DATA = {
             },
         },
         "feet": {
-            "effort_limit_sim": 150.0,  # 这是一个 float, 会应用到所有关节
+            "effort_limit_sim": 300.0,  # 这是一个 float, 会应用到所有关节
             "joint_names_expr": [".*_foot_pitch_joint", ".*_foot_roll_joint"],
             "stiffness": 2.0 * STIFFNESS_5020, # 这是一个 float
             "damping": 2.0 * DAMPING_5020,   # 这是一个 float
@@ -112,28 +112,17 @@ S3_CONFIG_DATA = {
 # 步骤 3: 定义关节顺序 (Lab 顺序 和 MuJoCo 顺序)
 # --------------------------------------------------------------------------
 
-# "Lab 顺序" (由 S3_CONFIG_DATA["actuators"] 的键顺序定义)
-# 必须手动维护这个列表，使其与 S3_CONFIG_DATA["actuators"] 的组顺序
-# (legs, feet, arms) 和组内 joint_names_expr 的顺序一致。
-# '.*_' 模式按字母顺序展开 (left, right)
+# "Lab 顺序" (由 ? 定义)  # TODO
 lab_order_names = [
-    # "legs"
-    "left_hip_yaw_joint", "right_hip_yaw_joint",
-    "left_hip_roll_joint", "right_hip_roll_joint",
-    "left_hip_pitch_joint", "right_hip_pitch_joint",
-    "left_knee_joint", "right_knee_joint",
-    # "feet"
-    "left_foot_pitch_joint", "right_foot_pitch_joint",
-    "left_foot_roll_joint", "right_foot_roll_joint",
-    # "arms"
-    "left_shoulder_pitch_joint", "right_shoulder_pitch_joint",
-    "left_shoulder_roll_joint", "right_shoulder_roll_joint",
-    "left_shoulder_yaw_joint", "right_shoulder_yaw_joint",
-    "left_elbow_joint", "right_elbow_joint",
-    "left_hand_joint", "right_hand_joint"
-]
+    'left_hip_roll_joint', 'left_shoulder_pitch_joint', 'right_hip_roll_joint', 'right_shoulder_pitch_joint',
+    'left_hip_yaw_joint', 'left_shoulder_roll_joint', 'right_hip_yaw_joint', 'right_shoulder_roll_joint', 
+    'left_hip_pitch_joint', 'left_shoulder_yaw_joint', 'right_hip_pitch_joint', 'right_shoulder_yaw_joint', 
+    'left_knee_joint', 'left_elbow_joint', 'right_knee_joint', 'right_elbow_joint', 
+    'left_foot_pitch_joint', 'left_hand_joint', 'right_foot_pitch_joint', 'right_hand_joint', 
+    'left_foot_roll_joint', 'right_foot_roll_joint'
+ ]
 
-# "MuJoCo 顺序" (由 S3_22dof.urdf 的运动学树遍历决定)
+# "MuJoCo 顺序" (由 S3_22dof.xml 的运动学树遍历决定)
 mj_order_names = [
     "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_hand_joint",
     "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_hand_joint",
@@ -230,7 +219,7 @@ def print_yaml_array(name, data, precision=4, per_row=6):
         print(f"{formatted_val}, ", end="")
     
     print("\n]")
-    print("-" * 60) # 分隔符
+    print("#", "-" * 60) # 分隔符
 
 def main():
     """
@@ -275,7 +264,7 @@ def main():
         kp_lab.append(kp)
         kd_lab.append(kd)
         tau_limit.append(tau)
-        action_scale_lab.append(tau / kp * 0.25) # S3_ACTION_SCALE = 0.25 * e[n] / s[n]  # 修改3
+        action_scale_lab.append(tau / kp * 0.25) # S3_ACTION_SCALE = 0.25 * e[n] / s[n]
         default_angles_lab.append(angle_map.get(joint_name, 0.0)) # 未指定则默认为 0.0
         
     # --- 3. 计算 mj2lab 映射 ---
@@ -283,9 +272,9 @@ def main():
     mj2lab = [lab_to_index_map[name] for name in lab_order_names]
     
     # --- 4. 打印所有结果 ---
-    print("=" * 60)
-    print(" S3 (22-DOF) BeyondMimic YAML 配置值 (自动计算)")
-    print("=" * 60)
+    print("#", "=" * 60)
+    print("# S3 (22-DOF) BeyondMimic YAML 配置值 (自动计算)")
+    print("#", "=" * 60)
 
     print_yaml_array("kp_lab", kp_lab, precision=3)
     print_yaml_array("kd_lab", kd_lab, precision=3)
@@ -300,7 +289,7 @@ def main():
             print("\n  ", end="")
         print(f"{val}, ", end="")
     print("\n]")
-    print("-" * 60)
+    print("#", "-" * 60)
 
 if __name__ == "__main__":
     main()
