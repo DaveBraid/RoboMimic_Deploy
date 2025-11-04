@@ -23,7 +23,7 @@ class BeyondMimic(FSMState):
         self.ref_motion_phase = 0
         
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_dir, "config", "BeyondMimic.yaml")
+        config_path = os.path.join(current_dir, "config", "BeyondMimic_S3.yaml")  # 使用S3机器人
         with open(config_path, "r") as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
             self.onnx_path = os.path.join(current_dir, "model", self.config["onnx_path"])
@@ -44,10 +44,10 @@ class BeyondMimic(FSMState):
             
             self.ref_joint_pos = np.zeros(self.num_actions, dtype=np.float32)
             self.ref_joint_vel = np.zeros(self.num_actions, dtype=np.float32)
-            self.ref_body_pos_w = np.zeros((1, 14, 3), dtype=np.float32)
-            self.ref_body_quat_w = np.zeros((1, 14, 4), dtype=np.float32)
-            self.ref_body_lin_vel_w = np.zeros((1, 14, 3), dtype=np.float32)
-            self.ref_body_ang_vel_w = np.zeros((1, 14, 3), dtype=np.float32)
+            self.ref_body_pos_w = np.zeros((1, 13, 3), dtype=np.float32)
+            self.ref_body_quat_w = np.zeros((1, 13, 4), dtype=np.float32)
+            self.ref_body_lin_vel_w = np.zeros((1, 13, 3), dtype=np.float32)
+            self.ref_body_ang_vel_w = np.zeros((1, 13, 3), dtype=np.float32)
             # load policy
             self.onnx_model = onnx.load(self.onnx_path)
             self.ort_session = onnxruntime.InferenceSession(self.onnx_path)
@@ -162,18 +162,18 @@ class BeyondMimic(FSMState):
         qj = self.state_cmd.q[self.mj2lab]
         qj = (qj - self.default_angles_lab)
 
-        base_troso_yaw = qj[2]
-        base_troso_roll = qj[5]
-        base_troso_pitch = qj[8]
+        # base_troso_yaw = qj[2]
+        # base_troso_roll = qj[5]
+        # base_troso_pitch = qj[8]
         
         # beyond mimic使用torso姿态作为姿态输入，需要根据腰部位置将pelvis数据转到torso
-        quat_yaw = self.euler_single_axis_to_quat(base_troso_yaw, 'z', degrees=False)
-        quat_roll = self.euler_single_axis_to_quat(base_troso_roll, 'x', degrees=False)
-        quat_pitch = self.euler_single_axis_to_quat(base_troso_pitch, 'y', degrees=False)
-        temp1 = self.quat_mul(quat_roll, quat_pitch)
-        temp2 = self.quat_mul(quat_yaw, temp1)
-        robot_quat = self.quat_mul(robot_quat, temp2)
-        ref_anchor_ori_w = self.ref_body_quat_w[:, 7].squeeze(0)
+        # quat_yaw = self.euler_single_axis_to_quat(base_troso_yaw, 'z', degrees=False)
+        # quat_roll = self.euler_single_axis_to_quat(base_troso_roll, 'x', degrees=False)
+        # quat_pitch = self.euler_single_axis_to_quat(base_troso_pitch, 'y', degrees=False)
+        # temp1 = self.quat_mul(quat_roll, quat_pitch)
+        # temp2 = self.quat_mul(quat_yaw, temp1)
+        # robot_quat = self.quat_mul(robot_quat, temp2)
+        ref_anchor_ori_w = self.ref_body_quat_w[:, 0].squeeze(0)
 
         # 在第一帧提取当前机器人yaw方向，与参考动作yaw方向做差（与beyond mimic一致）
         if(self.counter_step - self.counter_step_init < 2):
@@ -188,14 +188,14 @@ class BeyondMimic(FSMState):
 
         ang_vel = self.state_cmd.ang_vel
         
-        dqj = self.state_cmd.dq
+        dqj = self.state_cmd.dq[self.mj2lab]
         
         mimic_obs_buf = np.concatenate((self.ref_joint_pos.squeeze(0),
                                         self.ref_joint_vel.squeeze(0),
                                         motion_anchor_ori_b[:,:2].reshape(-1),
                                         ang_vel,
                                         qj,
-                                        dqj[self.mj2lab],
+                                        dqj,
                                         self.action.squeeze(0)),
                                         axis=-1, dtype=np.float32)
         
@@ -222,7 +222,7 @@ class BeyondMimic(FSMState):
 
         # 处理多个输出
         self.action, self.ref_joint_pos, self.ref_joint_vel, _, self.ref_body_quat_w, _, _ = outputs_result
-        target_dof_pos_mj = np.zeros(29)
+        target_dof_pos_mj = np.zeros(self.num_actions)
         target_dof_pos_lab = self.action * self.action_scale_lab + self.default_angles_lab
         target_dof_pos_mj[self.mj2lab] = target_dof_pos_lab.squeeze(0)
         

@@ -1,0 +1,152 @@
+# ----------------------------------------------------------------
+# BeyondMimic 配置文件 - 适用于 S3 机器人 (22-DOF)
+# ----------------------------------------------------------------
+
+# onnx_path: "policy_fightAndSports1_s1.onnx"
+# onnx_path: policy_charz_wo_est_14000.onnx
+# onnx_path: "policy_zuiwu_48000.onnx"
+# onnx_path: 'policy_d2s3_wo_est_28000.onnx'
+# onnx_path: 'policy_d1s3_wo_est_20000.onnx'
+onnx_path: 's3/policy_charz_d1s2_wo_est.onnx'
+
+motion_length: 8400  # 动作长度，单位为step
+counter_step_init: 0  # 用于跳过动作前段静止部分
+
+# d1s2
+# motion_length: 1200  # d1s2动作长度，单位为step
+# counter_step_init: 280  # d1s2用于跳过动作前段静止部分
+
+# f2s2
+# motion_length: 730  # 动作长度，单位为step
+# counter_step_init: 970  # 用于跳过动作前段静止部分
+
+# ----------------------------------------------------------------
+# S3 机器人 (22-DOF) 参数
+# ----------------------------------------------------------------
+num_actions: 22
+num_obs: 119
+
+
+
+# ----------------------------------------------------------------
+# PD 控制器增益 (Kp, Kd) - Lab 顺序
+# ----------------------------------------------------------------
+
+kp_lab: [
+  78.957, 78.957, 78.957, 78.957, 78.957, 78.957, 
+  78.957, 78.957, 78.957, 78.957, 78.957, 78.957, 
+  39.478, 39.478, 39.478, 39.478, 39.478, 39.478, 
+  39.478, 39.478, 78.957, 78.957, 
+]
+
+# 训练用 kd 值 (根据 S3_CYLINDER_CFG 计算得出)
+kd_lab: [
+  5.027, 5.027, 5.027, 5.027, 5.027, 5.027, 
+  5.027, 5.027, 5.027, 5.027, 5.027, 5.027, 
+  2.513, 2.513, 2.513, 2.513, 2.513, 2.513, 
+  2.513, 2.513, 5.027, 5.027, 
+]
+
+# ----------------------------------------------------------------
+# 默认姿态 和 动作缩放 (Action Scale) - Lab 顺序
+# ----------------------------------------------------------------
+
+# 默认姿态 (来自 S3_CYLINDER_CFG.init_state.joint_pos)
+default_angles_lab: [
+  0.000, 0.000, 0.000, 0.000, -0.220, -0.220, 
+  0.560, 0.560, -0.363, -0.363, 0.000, 0.000, 
+  0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 
+  0.000, 0.000, 0.000, 0.000, 
+]
+
+# 动作缩放 (基于 G1 Kp 值的映射)
+action_scale_lab: [
+  0.9499, 0.9499, 0.9499, 0.9499, 0.9499, 0.9499, 
+  0.9499, 0.9499, 0.4749, 0.4749, 0.4749, 0.4749, 
+  0.3166, 0.3166, 0.3166, 0.3166, 0.3166, 0.3166, 
+  0.3166, 0.3166, 0.0792, 0.0792, 
+]
+
+# ----------------------------------------------------------------
+# 力矩限制 (Torque Limit) - Lab 顺序
+# ----------------------------------------------------------------
+
+# 来自 S3_CYLINDER_CFG.actuators.effort_limit_sim
+tau_limit: [
+  # 腿部 (Legs)
+  300.0, 300.0, # hip_yaw
+  300.0, 300.0, # hip_roll
+  300.0, 300.0, # hip_pitch
+  300.0, 300.0, # knee
+  # 脚部 (Feet)
+  150.0, 150.0, # foot_pitch
+  150.0, 150.0, # foot_roll
+  # 手臂 (Arms)
+  50.0, 50.0, # shoulder_pitch
+  50.0, 50.0, # shoulder_roll
+  50.0, 50.0, # shoulder_yaw
+  50.0, 50.0, # elbow
+  25.0, 25.0  # hand
+]
+
+# ----------------------------------------------------------------
+# !! 核心 !!: S3 MuJoCo -> Lab 关节索引映射
+# ----------------------------------------------------------------
+#
+# MuJoCo (MJ) 顺序 (来自 URDF 运动学树遍历):
+# [0: l_shoulder_pitch, 1: l_shoulder_roll, 2: l_shoulder_yaw, 3: l_elbow, 4: l_hand,
+#  5: r_shoulder_pitch, 6: r_shoulder_roll, 7: r_shoulder_yaw, 8: r_elbow, 9: r_hand,
+#  10: l_hip_roll, 11: l_hip_yaw, 12: l_hip_pitch, 13: l_knee,
+#  14: l_foot_pitch, 15: l_foot_roll,
+#  16: r_hip_roll, 17: r_hip_yaw, 18: r_hip_pitch, 19: r_knee,
+#  20: r_foot_pitch, 21: r_foot_roll]
+#
+# Isaac Lab (Lab) 顺序 (来自 S3_CYLINDER_CFG 定义):
+# [0: l_hip_yaw, 1: r_hip_yaw, 2: l_hip_roll, 3: r_hip_roll, 4: l_hip_pitch, 5: r_hip_pitch,
+#  6: l_knee, 7: r_knee, 8: l_foot_pitch, 9: r_foot_pitch, 10: l_foot_roll, 11: r_foot_roll,
+#  12: l_shoulder_pitch, 13: r_shoulder_pitch, 14: l_shoulder_roll, 15: r_shoulder_roll,
+#  16: l_shoulder_yaw, 17: r_shoulder_yaw, 18: l_elbow, 19: r_elbow, 20: l_hand, 21: r_hand]
+
+# 把mujoco里的关节顺序按照lab的顺序填好
+mj2lab: [
+  11, 17,  # hip_yaw
+  10, 16,  # hip_roll
+  12, 18,  # hip_pitch
+  13, 19,  # knee
+  14, 20,  # foot_pitch
+  15, 21,  # foot_roll
+  0, 5,    # shoulder_pitch
+  1, 6,    # shoulder_roll
+  2, 7,    # shoulder_yaw
+  3, 8,    # elbow
+  4, 9     # hand
+]
+
+# lab2mj: [
+#   # MJ 0-4 (Left Arm)
+#   12, # MJ 0 (l_shoulder_pitch) -> Lab 12
+#   14, # MJ 1 (l_shoulder_roll)  -> Lab 14
+#   16, # MJ 2 (l_shoulder_yaw)   -> Lab 16
+#   18, # MJ 3 (l_elbow)          -> Lab 18
+#   20, # MJ 4 (l_hand)           -> Lab 20
+#   # MJ 5-9 (Right Arm)
+#   13, # MJ 5 (r_shoulder_pitch) -> Lab 13
+#   15, # MJ 6 (r_shoulder_roll)  -> Lab 15
+#   17, # MJ 7 (r_shoulder_yaw)   -> Lab 17
+#   19, # MJ 8 (r_elbow)          -> Lab 19
+#   21, # MJ 9 (r_hand)           -> Lab 21
+#   # MJ 10-15 (Left Leg)
+#   2,  # MJ 10 (l_hip_roll)      -> Lab 2
+#   0,  # MJ 11 (l_hip_yaw)       -> Lab 0
+#   4,  # MJ 12 (l_hip_pitch)     -> Lab 4
+#   6,  # MJ 13 (l_knee)          -> Lab 6
+#   8,  # MJ 14 (l_foot_pitch)    -> Lab 8
+#   10, # MJ 15 (l_foot_roll)     -> Lab 10
+#   # MJ 16-21 (Right Leg)
+#   3,  # MJ 16 (r_hip_roll)      -> Lab 3
+#   1,  # MJ 17 (r_hip_yaw)       -> Lab 1
+#   5,  # MJ 18 (r_hip_pitch)     -> Lab 5
+#   7,  # MJ 19 (r_knee)          -> Lab 7
+#   9,  # MJ 20 (r_foot_pitch)    -> Lab 9
+#   11  # MJ 21 (r_foot_roll)     -> Lab 11
+# ]
