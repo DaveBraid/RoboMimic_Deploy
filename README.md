@@ -6,7 +6,9 @@
 </div>
 
 <p align="center">
-  🎮🚪 <strong>RoboMimic Deploy 是一个基于状态切换机制的机器人多策略部署框架，目前包含的策略适用于宇树G1机器人(29dof)</strong> 🚪🎮
+  🎮🚪 <strong>RoboMimic Deploy 是一个基于状态切换机制的机器人多策略部署框架，目前包含的策略适用于宇树G1机器人(29dof)和启灵神农3机器人(22dof)</strong> 🚪🎮
+  
+  本仓库是Fork https://github.com/ccrpRepo/RoboMimic_Deploy 后的魔改版。
 </p>
 
 ## 写在前面
