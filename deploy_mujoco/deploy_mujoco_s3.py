@@ -33,7 +33,7 @@ def pd_control(target_q, q, kp, target_dq, dq, kd):
     return (target_q - q) * kp + (target_dq - dq) * kd
 
 if __name__ == "__main__":
-    remote_dev = False
+    remote_dev = True
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     mujoco_yaml_path = os.path.join(current_dir, "config", "mujoco.yaml")
@@ -60,6 +60,12 @@ if __name__ == "__main__":
     joystick = JoyStick() if not remote_dev else None
     Running = True
     with mujoco.viewer.launch_passive(m, d) as viewer:
+        # 设置初始相机视角
+        viewer.cam.distance = 3.0
+        viewer.cam.azimuth = 180
+        viewer.cam.elevation = -20
+        viewer.cam.lookat = np.array([0, 0, 0.55])
+        
         sim_start_time = time.time()
         while viewer.is_running() and Running:
             try:
