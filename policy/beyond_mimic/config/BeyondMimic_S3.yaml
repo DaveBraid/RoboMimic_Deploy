@@ -1,0 +1,104 @@
+# ----------------------------------------------------------------
+# BeyondMimic 配置文件 - 适用于 S3 机器人 (22-DOF)
+# ----------------------------------------------------------------
+
+# onnx_path: "policy_fightAndSports1_s1.onnx"
+# onnx_path: policy_charz_wo_est_14000.onnx
+# onnx_path: "policy_zuiwu_48000.onnx"
+# onnx_path: 'policy_d2s3_wo_est_28000.onnx'
+# onnx_path: 'policy_d1s3_wo_est_20000.onnx'
+onnx_path: 's3/policy_charz_d1s2_wo_est_20000.onnx'
+
+motion_length: 8400  # 动作长度，单位为step
+counter_step_init: 0  # 用于跳过动作前段静止部分
+
+# d1s2
+# motion_length: 1200  # d1s2动作长度，单位为step
+# counter_step_init: 280  # d1s2用于跳过动作前段静止部分
+
+# f2s2
+# motion_length: 730  # 动作长度，单位为step
+# counter_step_init: 970  # 用于跳过动作前段静止部分
+
+# ----------------------------------------------------------------
+# S3 机器人 (22-DOF) 参数
+# ----------------------------------------------------------------
+num_actions: 22
+num_obs: 119
+
+# ============================================================
+# S3 (22-DOF) BeyondMimic YAML 配置值 (自动计算)
+# ============================================================
+# kp_lab (按 Lab 顺序)
+kp_lab: [
+  78.957, 39.478, 78.957, 39.478, 78.957, 39.478, 
+  78.957, 39.478, 78.957, 39.478, 78.957, 39.478, 
+  78.957, 39.478, 78.957, 39.478, 78.957, 78.957, 
+  78.957, 78.957, 78.957, 78.957, 
+]
+# ------------------------------------------------------------
+# kd_lab (按 Lab 顺序)
+kd_lab: [
+  5.027, 2.513, 5.027, 2.513, 5.027, 2.513, 
+  5.027, 2.513, 5.027, 2.513, 5.027, 2.513, 
+  5.027, 2.513, 5.027, 2.513, 5.027, 5.027, 
+  5.027, 5.027, 5.027, 5.027, 
+]
+# ------------------------------------------------------------
+# tau_limit (按 Lab 顺序)
+tau_limit: [
+  300.0, 50.0, 300.0, 50.0, 300.0, 50.0, 
+  300.0, 50.0, 300.0, 50.0, 300.0, 50.0, 
+  300.0, 50.0, 300.0, 50.0, 300.0, 25.0, 
+  300.0, 25.0, 300.0, 300.0, 
+]
+# ------------------------------------------------------------
+# action_scale_lab (按 Lab 顺序)
+action_scale_lab: [
+  0.9499, 0.3166, 0.9499, 0.3166, 0.9499, 0.3166, 
+  0.9499, 0.3166, 0.9499, 0.3166, 0.9499, 0.3166, 
+  0.9499, 0.3166, 0.9499, 0.3166, 0.9499, 0.0792, 
+  0.9499, 0.0792, 0.9499, 0.9499, 
+]
+# ------------------------------------------------------------
+# default_angles_lab (按 Lab 顺序)
+default_angles_lab: [
+  0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 
+  0.000, 0.000, -0.220, 0.000, -0.220, 0.000, 
+  0.560, 0.000, 0.560, 0.000, -0.363, 0.000, 
+  -0.363, 0.000, 0.000, 0.000, 
+]
+# ------------------------------------------------------------
+# MuJoCo 索引 -> Lab 索引 映射
+mj2lab: [
+  10, 0, 16, 5, 11, 1, 17, 6, 12, 2, 18, 7, 
+  13, 3, 19, 8, 14, 4, 20, 9, 15, 21, 
+]
+# ------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# !! 核心 !!: S3 MuJoCo -> Lab 关节索引映射
+# !!!!!!!mj2lab就是把mujoco里的关节顺序（位置）按照lab的顺序填好（序号）!!!!!!!!!
+# ----------------------------------------------------------------
+#
+# MuJoCo (MJ) 顺序 (来自 URDF 运动学树遍历):
+# [0: l_shoulder_pitch, 1: l_shoulder_roll, 2: l_shoulder_yaw, 3: l_elbow, 4: l_hand,
+#  5: r_shoulder_pitch, 6: r_shoulder_roll, 7: r_shoulder_yaw, 8: r_elbow, 9: r_hand,
+#  10: l_hip_roll, 11: l_hip_yaw, 12: l_hip_pitch, 13: l_knee,
+#  14: l_foot_pitch, 15: l_foot_roll,
+#  16: r_hip_roll, 17: r_hip_yaw, 18: r_hip_pitch, 19: r_knee,
+#  20: r_foot_pitch, 21: r_foot_roll]
+#
+# ==================================================
+# JOINT ORDER (FOR OBS AND ACTION)
+# ==================================================
+# Total Joints: 22
+# Joint Order (from robot.data.joint_names):
+# ['left_hip_roll_joint', 'left_shoulder_pitch_joint', 'right_hip_roll_joint', 'right_shoulder_pitch_joint',
+#  'left_hip_yaw_joint', 'left_shoulder_roll_joint', 'right_hip_yaw_joint', 'right_shoulder_roll_joint', 
+#  'left_hip_pitch_joint', 'left_shoulder_yaw_joint', 'right_hip_pitch_joint', 'right_shoulder_yaw_joint', 
+#  'left_knee_joint', 'left_elbow_joint', 'right_knee_joint', 'right_elbow_joint', 
+#  'left_foot_pitch_joint', 'left_hand_joint', 'right_foot_pitch_joint', 'right_hand_joint', 
+#  'left_foot_roll_joint', 'right_foot_roll_joint']
+# ==================================================
