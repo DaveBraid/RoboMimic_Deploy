@@ -11,7 +11,7 @@ import numpy as np
 import yaml
 import os
 from common.ctrlcomp import *
-from FSM.FSM import *
+from FSM.FSMS3 import *
 from common.utils import get_gravity_orientation
 from common.joystick import JoyStick, JoystickButton
 
