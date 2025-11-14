@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import re
-import pprint
+
+# --------------------------------------------------------------------------
+# 步骤0: 选定生成参数的顺序
+OUTPUT_IN_MJ_ORDER = True  # True: 直接输出按 MuJoCo 关节顺序排列的参数, False: 输出 Lab 顺序
+# --------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------
 # 步骤 1: 复制 S3_CYLINDER_CFG 中的所有物理常量
@@ -117,18 +120,23 @@ lab_order_names = [
     'left_hip_roll_joint', 'left_shoulder_pitch_joint', 'right_hip_roll_joint', 'right_shoulder_pitch_joint',
     'left_hip_yaw_joint', 'left_shoulder_roll_joint', 'right_hip_yaw_joint', 'right_shoulder_roll_joint', 
     'left_hip_pitch_joint', 'left_shoulder_yaw_joint', 'right_hip_pitch_joint', 'right_shoulder_yaw_joint', 
-    'left_knee_joint', 'left_elbow_joint', 'right_knee_joint', 'right_elbow_joint', 
-    'left_foot_pitch_joint', 'left_hand_joint', 'right_foot_pitch_joint', 'right_hand_joint', 
-    'left_foot_roll_joint', 'right_foot_roll_joint'
+    'left_knee_joint', 'left_elbow_joint', 'right_knee_joint', 'right_elbow_joint', 'left_foot_pitch_joint',
+    'left_hand_joint', 'right_foot_pitch_joint', 'right_hand_joint', 'left_foot_roll_joint', 'right_foot_roll_joint'
  ]
 
 # "MuJoCo 顺序" (由 S3_22dof.xml 的运动学树遍历决定)
 mj_order_names = [
+    "left_hip_roll_joint", "left_hip_yaw_joint", "left_hip_pitch_joint", "left_knee_joint", "left_foot_pitch_joint", "left_foot_roll_joint",
+    "right_hip_roll_joint", "right_hip_yaw_joint", "right_hip_pitch_joint", "right_knee_joint", "right_foot_pitch_joint", "right_foot_roll_joint",
     "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_hand_joint",
     "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_hand_joint",
-    "left_hip_roll_joint", "left_hip_yaw_joint", "left_hip_pitch_joint", "left_knee_joint", "left_foot_pitch_joint", "left_foot_roll_joint",
-    "right_hip_roll_joint", "right_hip_yaw_joint", "right_hip_pitch_joint", "right_knee_joint", "right_foot_pitch_joint", "right_foot_roll_joint"
 ]
+# mj_order_names = [
+#     "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_hand_joint",
+#     "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_hand_joint",
+#     "left_hip_roll_joint", "left_hip_yaw_joint", "left_hip_pitch_joint", "left_knee_joint", "left_foot_pitch_joint", "left_foot_roll_joint",
+#     "right_hip_roll_joint", "right_hip_yaw_joint", "right_hip_pitch_joint", "right_knee_joint", "right_foot_pitch_joint", "right_foot_roll_joint",
+# ]
 
 # --------------------------------------------------------------------------
 # 步骤 4: 辅助函数和主计算逻辑
@@ -202,9 +210,9 @@ def get_default_angle_map(config_dict):
             angle_map[joint_name] = angle
     return angle_map
 
-def print_yaml_array(name, data, precision=4, per_row=6):
-    """辅助函数，用于漂亮地打印 YAML 数组"""
-    print(f"# {name} (按 Lab 顺序)")
+def print_yaml_array(name, data, order_label, precision=4, per_row=6):
+    """辅助函数，用于按照指定顺序漂亮地打印 YAML 数组"""
+    print(f"# {name} (按 {order_label} 顺序)")
     print(f"{name.lower()}: [", end="")
     
     for i, val in enumerate(data):
@@ -225,7 +233,7 @@ def main():
     """
     主执行函数：
     1. 展开所有属性映射
-    2. 按 Lab 顺序构建数组
+    2. 按选定顺序构建数组
     3. 计算 mj2lab 映射
     4. 打印所有结果
     """
@@ -239,14 +247,18 @@ def main():
     angle_config = S3_CONFIG_DATA["init_state"]["joint_pos"]
     angle_map = get_default_angle_map(angle_config)
     
-    # --- 2. 按 Lab 顺序构建数组 ---
-    kp_lab = []
-    kd_lab = []
+    # --- 2. 按选择的顺序构建数组 ---
+    joint_order = mj_order_names if OUTPUT_IN_MJ_ORDER else lab_order_names
+    order_label = "MuJoCo" if OUTPUT_IN_MJ_ORDER else "Lab"
+    name_suffix = "mj" if OUTPUT_IN_MJ_ORDER else "lab"
+
+    kp_values = []
+    kd_values = []
     tau_limit = []
-    action_scale_lab = []
-    default_angles_lab = []
+    action_scale_values = []
+    default_angles = []
     
-    for joint_name in lab_order_names:
+    for joint_name in joint_order:
         if joint_name not in kp_map:
             print(f"** 错误: 关节 '{joint_name}' 在 kp_map (stiffness) 中未找到")
             continue
@@ -260,12 +272,12 @@ def main():
         kp = kp_map[joint_name]
         kd = kd_map[joint_name]
         tau = tau_map[joint_name]
-        
-        kp_lab.append(kp)
-        kd_lab.append(kd)
+
+        kp_values.append(kp)
+        kd_values.append(kd)
         tau_limit.append(tau)
-        action_scale_lab.append(tau / kp * 0.25) # S3_ACTION_SCALE = 0.25 * e[n] / s[n]
-        default_angles_lab.append(angle_map.get(joint_name, 0.0)) # 未指定则默认为 0.0
+        action_scale_values.append(tau / kp * 0.25) # S3_ACTION_SCALE = 0.25 * e[n] / s[n]
+        default_angles.append(angle_map.get(joint_name, 0.0)) # 未指定则默认为 0.0
         
     # --- 3. 计算 mj2lab 映射 ---
     lab_to_index_map = {name: idx for idx, name in enumerate(mj_order_names)}
@@ -273,14 +285,15 @@ def main():
     
     # --- 4. 打印所有结果 ---
     print("#", "=" * 60)
-    print("# S3 (22-DOF) BeyondMimic YAML 配置值 (自动计算)")
+    print("# S3 (22-DOF) BeyondMimic YAML 配置值 (由params cal脚本自动计算)")
     print("#", "=" * 60)
 
-    print_yaml_array("kp_lab", kp_lab, precision=3)
-    print_yaml_array("kd_lab", kd_lab, precision=3)
-    print_yaml_array("tau_limit", tau_limit, precision=1)
-    print_yaml_array("action_scale_lab", action_scale_lab, precision=4)
-    print_yaml_array("default_angles_lab", default_angles_lab, precision=3)
+    print(f"# 当前输出顺序: {order_label}")
+    print_yaml_array(f"kp_{name_suffix}", kp_values, order_label, precision=3)
+    print_yaml_array(f"kd_{name_suffix}", kd_values, order_label, precision=3)
+    print_yaml_array(f"tau_limit_{name_suffix}", tau_limit, order_label, precision=1)
+    print_yaml_array(f"action_scale_{name_suffix}", action_scale_values, order_label, precision=4)
+    print_yaml_array(f"default_angles_{name_suffix}", default_angles, order_label, precision=3)
 
     print("# MuJoCo 索引 -> Lab 索引 映射")
     print("mj2lab: [", end="")
