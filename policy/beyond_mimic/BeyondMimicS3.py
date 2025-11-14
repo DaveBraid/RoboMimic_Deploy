@@ -7,9 +7,8 @@ import yaml
 from common.utils import FSMCommand, progress_bar
 import onnx
 import onnxruntime
-import torch
 import os
-
+# import time
 
 class BeyondMimic(FSMState):
     def __init__(self, state_cmd:StateAndCmd, policy_output:PolicyOutput):
@@ -31,7 +30,7 @@ class BeyondMimic(FSMState):
             self.kds_lab = np.array(self.config["kd_lab"], dtype=np.float32)
             self.default_angles_lab =  np.array(self.config["default_angles_lab"], dtype=np.float32)
             self.mj2lab =  np.array(self.config["mj2lab"], dtype=np.int32)
-            self.tau_limit =  np.array(self.config["tau_limit"], dtype=np.float32)
+            # self.tau_limit =  np.array(self.config["tau_limit_lab"], dtype=np.float32)
             self.num_actions = self.config["num_actions"]
             self.num_obs = self.config["num_obs"]
             self.action_scale_lab = np.array(self.config["action_scale_lab"], dtype=np.float32)
@@ -59,10 +58,13 @@ class BeyondMimic(FSMState):
             self.counter_step_init = self.config['counter_step_init']  # 用于跳过动作前段静止部分
 
             print("BeyondMimic-like policy initializing ...")
+
+        self.last_ref_pose = np.zeros_like(self.ref_joint_pos)
+
     
     def enter(self):
-        self.ref_motion_phase = 0.
-        self.motion_time = 0
+        # self.ref_motion_phase = 0.
+        # self.motion_time = 0
         self.counter_step = self.counter_step_init
 
         observation = {}
@@ -199,18 +201,19 @@ class BeyondMimic(FSMState):
                                         self.action.squeeze(0)),
                                         axis=-1, dtype=np.float32)
         
-        mimic_obs_tensor = torch.from_numpy(mimic_obs_buf).unsqueeze(0).cpu().numpy()
+        # mimic_obs_tensor = torch.from_numpy(mimic_obs_buf).unsqueeze(0).cpu().numpy()
+        mimic_obs_tensor = np.expand_dims(mimic_obs_buf, axis=0)
         observation = {}
 
         # obs0 是网络观测，obs1 是当前时间步，用于输出参考动作信息
         observation[self.input_name[0]] = mimic_obs_tensor
         # 到达设定长度自动终止
-        if(self.counter_step > self.motion_length + self.counter_step_init):
+        if(self.counter_step > self.motion_length):
             # 增加三秒缓冲时间，作为结束动作
-            if self.counter_step < self.motion_length + self.counter_step_init + 90:
+            if self.counter_step < self.motion_length + 90:
                 self.counter_step += 1
                 # 使时间步静止，停止在同一个动作帧，当作谢幕（但仍然能保持站立）
-                observation[self.input_name[1]] = np.array([[self.motion_length + self.counter_step_init]], dtype=np.float32)
+                observation[self.input_name[1]] = np.array([[self.motion_length]], dtype=np.float32)
             else:
                 self.state_cmd.skill_cmd = FSMCommand.LOCO  # 动作结束后切换到LocoMode
                 print("Beyond mimic action hit motion length, switching to LocoMode")
@@ -233,6 +236,14 @@ class BeyondMimic(FSMState):
         # update motion phase
         self.counter_step += 1
 
+        # 达到最大步数后切换到LocoMode
+        if np.equal(self.last_ref_pose, self.ref_joint_pos).all():
+            self.state_cmd.skill_cmd = FSMCommand.LOCO
+            print("Beyond mimic action hit motion length, switching to LocoMode")
+            return
+        self.last_ref_pose = self.ref_joint_pos.copy()
+        
+
     def exit(self):
         self.action = np.zeros(self.config["num_actions"], dtype=np.float32)
         # self.action_buf = np.zeros(self.config["num_actions"] * self.history_length, dtype=np.float32)
@@ -247,7 +258,8 @@ class BeyondMimic(FSMState):
     def checkChange(self):
         if(self.state_cmd.skill_cmd == FSMCommand.LOCO):
             self.state_cmd.skill_cmd = FSMCommand.INVALID
-            return FSMStateName.SKILL_COOLDOWN
+            # return FSMStateName.SKILL_COOLDOWN
+            return FSMStateName.LOCOMODE
         elif(self.state_cmd.skill_cmd == FSMCommand.PASSIVE):
             self.state_cmd.skill_cmd = FSMCommand.INVALID
             return FSMStateName.PASSIVE
